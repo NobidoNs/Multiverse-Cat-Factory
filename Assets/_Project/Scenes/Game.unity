@@ -651,7 +651,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b0f0bf3460a7224b8b66c8612b70d57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Conveyor
-  speed: 5
+  speed: 1
   mt: {fileID: 2100000, guid: 477de86e387cb3d4393cbb563311de24, type: 2}
   textureScrollSpeed: 1
 --- !u!1 &1687258581
