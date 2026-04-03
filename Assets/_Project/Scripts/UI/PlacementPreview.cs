@@ -10,6 +10,14 @@ public class PlacementPreview : MonoBehaviour
     private Vector2Int currentCell = new Vector2Int(-999, -999);
     private bool isActive;
 
+    private void Awake()
+    {
+        if (previewRenderer == null)
+        {
+            previewRenderer = GetComponentInChildren<Renderer>();
+        }
+    }
+
     public void Initialize(GridField gridRef)
     {
         grid = gridRef;
@@ -18,13 +26,19 @@ public class PlacementPreview : MonoBehaviour
 
     public void UpdatePosition(Vector3 worldPos)
     {
-        if (!isActive) return;
-        
+        if (!isActive || grid == null)
+        {
+            return;
+        }
+
         currentCell = grid.WorldToCell(worldPos);
         transform.position = grid.CellToWorld(currentCell);
-        
-        bool isValid = grid.IsValidCell(currentCell);
-        previewRenderer.sharedMaterial = isValid ? validMat : invalidMat;
+
+        if (previewRenderer != null)
+        {
+            bool isValid = grid.IsValidCell(currentCell);
+            previewRenderer.sharedMaterial = isValid ? validMat : invalidMat;
+        }
     }
 
     public void Show()
@@ -39,6 +53,13 @@ public class PlacementPreview : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    public Vector2Int GetTargetCell() => currentCell;
-    public bool IsPreviewValid() => grid.IsValidCell(currentCell);
+    public Vector2Int GetTargetCell()
+    {
+        return currentCell;
+    }
+
+    public bool IsPreviewValid()
+    {
+        return grid != null && grid.IsValidCell(currentCell);
+    }
 }
