@@ -3,6 +3,8 @@ using UnityEngine.EventSystems;
 
 public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    private const string GroundPlaneName = "GridGroundPlane";
+
     [Header("Placement")]
     public int typeId = 1;
     public GameObject buildingPrefab;
@@ -15,6 +17,7 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
     private GameObject currentPreview;
     private PlacementPreview placementPreview;
+    private GridField activeGrid;
     private bool isDragging;
 
     private void Awake()
@@ -39,6 +42,7 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         }
 
         isDragging = true;
+        activeGrid = grid;
 
         if (canvasGroup != null)
         {
@@ -53,7 +57,7 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
             if (placementPreview != null)
             {
-                placementPreview.Initialize(grid);
+                placementPreview.Initialize(activeGrid);
                 placementPreview.Show();
             }
         }
@@ -66,24 +70,27 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             return;
         }
 
-        if (currentPreview == null || !TryGetWorldPos(eventData.position, out Vector3 worldPos))
+        if (currentPreview == null || !TryGetPlacementTarget(eventData.position, out GridField targetGrid, out Vector3 worldPos))
         {
             return;
         }
 
+        activeGrid = targetGrid;
+
         if (placementPreview != null)
         {
+            placementPreview.SetGrid(activeGrid);
             placementPreview.UpdatePosition(worldPos);
             return;
         }
 
-        Vector2Int cell = grid.WorldToCell(worldPos);
-        currentPreview.transform.position = grid.CellToWorld(cell) + Vector3.up * 0.1f;
+        Vector2Int cell = activeGrid.WorldToCell(worldPos);
+        currentPreview.transform.position = activeGrid.CellToWorld(cell) + Vector3.up * 0.1f;
 
         Renderer previewRenderer = currentPreview.GetComponentInChildren<Renderer>();
         if (previewRenderer != null)
         {
-            previewRenderer.material.color = grid.IsValidCell(cell) ? Color.green : Color.red;
+            previewRenderer.material.color = activeGrid.IsValidCell(cell) ? Color.green : Color.red;
         }
     }
 
@@ -96,12 +103,12 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         isDragging = false;
 
-        if (TryGetWorldPos(eventData.position, out Vector3 worldPos))
+        if (TryGetPlacementTarget(eventData.position, out GridField targetGrid, out Vector3 worldPos))
         {
-            Vector2Int cell = grid.WorldToCell(worldPos);
-            if (grid.Place(cell.x, cell.y, typeId))
+            Vector2Int cell = targetGrid.WorldToCell(worldPos);
+            if (targetGrid.Place(cell.x, cell.y, typeId))
             {
-                Vector3 spawnPos = grid.CellToWorld(cell);
+                Vector3 spawnPos = targetGrid.CellToWorld(cell);
                 Instantiate(buildingPrefab, spawnPos, Quaternion.identity);
                 Debug.Log($"Placed building {typeId} at [{cell.x}, {cell.y}]");
             }
@@ -114,23 +121,37 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         CleanupDrag();
     }
 
-    private bool TryGetWorldPos(Vector2 screenPos, out Vector3 worldPos)
+    private bool TryGetPlacementTarget(Vector2 screenPos, out GridField targetGrid, out Vector3 worldPos)
     {
         if (grid == null || cam == null)
         {
+            targetGrid = null;
             worldPos = Vector3.zero;
             return false;
         }
 
-        Plane groundPlane = new Plane(Vector3.up, grid.Origin);
         Ray ray = cam.ScreenPointToRay(screenPos);
 
-        if (groundPlane.Raycast(ray, out float distance))
+        if (Physics.Raycast(ray, out RaycastHit hit, 1000f))
         {
+            GridField hitGrid = hit.collider.GetComponentInParent<GridField>();
+            if (hitGrid != null && hit.collider.transform.name == GroundPlaneName)
+            {
+                targetGrid = hitGrid;
+                worldPos = hit.point;
+                return true;
+            }
+        }
+
+        Plane fallbackPlane = new Plane(Vector3.up, grid.Origin);
+        if (fallbackPlane.Raycast(ray, out float distance))
+        {
+            targetGrid = grid;
             worldPos = ray.GetPoint(distance);
             return true;
         }
 
+        targetGrid = null;
         worldPos = Vector3.zero;
         return false;
     }
@@ -150,5 +171,6 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         currentPreview = null;
         placementPreview = null;
+        activeGrid = null;
     }
 }
