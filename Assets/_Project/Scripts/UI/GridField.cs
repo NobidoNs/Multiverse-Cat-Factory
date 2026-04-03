@@ -38,13 +38,11 @@ public class GridField : MonoBehaviour
         
         // Оффсеты (те же, что и в CellToWorld, но с обратным знаком для инверсии)
         // CellToWorld: + (-0.41) по X, + (0.25) по Z
-        float offsetX = cellSize * 0.41f;   // инверсия -0.41
-        float offsetZ = cellSize * -0.25f;  // инверсия +0.25
 
         // ГЛАВНОЕ ИЗМЕНЕНИЕ: RoundToInt вместо FloorToInt
         // Это переключает логику с "пол от угла" на "ближайший центр"
-        int x = Mathf.RoundToInt((worldPos.x - Origin.x + halfW - cellSize * 0.5f + offsetX) / cellSize);
-        int z = Mathf.RoundToInt((worldPos.z - Origin.z + halfH - cellSize * 0.5f + offsetZ) / cellSize);
+        int x = Mathf.RoundToInt((worldPos.x - Origin.x + halfW - cellSize * 0.5f + cellSize) / cellSize);
+        int z = Mathf.RoundToInt((worldPos.z - Origin.z + halfH - cellSize * 0.5f + cellSize) / cellSize);
         
         return new Vector2Int(x, z);
     }
@@ -55,9 +53,9 @@ public class GridField : MonoBehaviour
         float halfH = (height * cellSize) * 0.5f;
 
         return Origin + new Vector3(
-            cell.x * cellSize - halfW + cellSize * 0.5f + (cellSize * -0.41f), 
+            cell.x * cellSize - halfW + cellSize * 0.5f + cellSize, 
             0, 
-            cell.y * cellSize - halfH + cellSize * 0.5f + (cellSize * 0.25f)
+            cell.y * cellSize - halfH + cellSize * 0.5f + cellSize
         );
     }
 
