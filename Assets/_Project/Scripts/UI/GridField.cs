@@ -4,6 +4,8 @@ using UnityEngine;
 public class GridField : MonoBehaviour
 {
     private const string GroundPlaneName = "GridGroundPlane";
+    private static readonly Color DefaultGridColor = Color.white;
+    private static readonly Color SelectedGridColor = new Color(0.55f, 0.9f, 0.65f, 1f);
 
     [Header("Grid")]
     public int width = 10;
@@ -17,6 +19,7 @@ public class GridField : MonoBehaviour
     private GameObject[] placedPrefabs;
     private GameObject[] placedInstances;
     private Transform groundPlane;
+    private Renderer groundPlaneRenderer;
 
     private void Awake()
     {
@@ -163,6 +166,17 @@ public class GridField : MonoBehaviour
         }
     }
 
+    public void SetSelectionVisual(bool isSelected)
+    {
+        Renderer renderer = GetGroundPlaneRenderer();
+        if (renderer == null)
+        {
+            return;
+        }
+
+        renderer.material.color = isSelected ? SelectedGridColor : DefaultGridColor;
+    }
+
     private void EnsureGrid()
     {
         if (occupied == null || cellType == null || placedPrefabs == null || placedInstances == null)
@@ -180,6 +194,7 @@ public class GridField : MonoBehaviour
             1f,
             height * cellSize / 10f
         );
+        GetGroundPlaneRenderer();
     }
 
     private Transform GetOrCreateGroundPlane()
@@ -194,6 +209,7 @@ public class GridField : MonoBehaviour
         {
             groundPlane = existingPlane;
             EnsureGroundPlanePhysics(existingPlane.gameObject);
+            CacheGroundPlaneRenderer(existingPlane.gameObject);
             return groundPlane;
         }
 
@@ -202,9 +218,31 @@ public class GridField : MonoBehaviour
         planeObject.transform.SetParent(transform, true);
 
         EnsureGroundPlanePhysics(planeObject);
+        CacheGroundPlaneRenderer(planeObject);
 
         groundPlane = planeObject.transform;
         return groundPlane;
+    }
+
+    private Renderer GetGroundPlaneRenderer()
+    {
+        if (groundPlaneRenderer != null)
+        {
+            return groundPlaneRenderer;
+        }
+
+        if (groundPlane == null)
+        {
+            return null;
+        }
+
+        CacheGroundPlaneRenderer(groundPlane.gameObject);
+        return groundPlaneRenderer;
+    }
+
+    private void CacheGroundPlaneRenderer(GameObject planeObject)
+    {
+        groundPlaneRenderer = planeObject.GetComponent<Renderer>();
     }
 
     private static void EnsureGroundPlanePhysics(GameObject planeObject)
