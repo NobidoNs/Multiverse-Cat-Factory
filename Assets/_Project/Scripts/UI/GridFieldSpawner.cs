@@ -32,9 +32,10 @@ public class GridFieldSpawner : MonoBehaviour
         }
 
         spawnedGrids.RemoveAll(grid => grid == null);
+        GridField templateGrid = GetTemplateGrid();
 
-        Transform parent = spawnedGridParent != null ? spawnedGridParent : sourceGrid.transform.parent;
-        GameObject clonedGridObject = Instantiate(sourceGrid.gameObject, parent);
+        Transform parent = spawnedGridParent != null ? spawnedGridParent : templateGrid.transform.parent;
+        GameObject clonedGridObject = Instantiate(templateGrid.gameObject, parent);
         clonedGridObject.name = $"{spawnedGridNamePrefix}_{spawnedGrids.Count + 1}";
 
         GridField clonedGrid = clonedGridObject.GetComponent<GridField>();
@@ -50,9 +51,10 @@ public class GridFieldSpawner : MonoBehaviour
         Vector3 targetPosition = sourceGrid.transform.position;
         targetPosition.x = rightEdge + horizontalSpacing + clonedGridHalfWidth;
 
-        clonedGridObject.transform.SetPositionAndRotation(targetPosition, sourceGrid.transform.rotation);
-        clonedGridObject.transform.localScale = sourceGrid.transform.localScale;
+        clonedGridObject.transform.SetPositionAndRotation(targetPosition, templateGrid.transform.rotation);
+        clonedGridObject.transform.localScale = templateGrid.transform.localScale;
         clonedGrid.RebuildGrid();
+        templateGrid.CopyPlacedObjectsTo(clonedGrid);
 
         spawnedGrids.Add(clonedGrid);
     }
@@ -78,6 +80,16 @@ public class GridFieldSpawner : MonoBehaviour
     private static float GetRightEdge(GridField grid)
     {
         return grid.transform.position.x + grid.width * grid.cellSize * 0.5f;
+    }
+
+    private GridField GetTemplateGrid()
+    {
+        if (spawnedGrids.Count > 0)
+        {
+            return spawnedGrids[spawnedGrids.Count - 1];
+        }
+
+        return sourceGrid;
     }
 
     private void ResolveReferences()

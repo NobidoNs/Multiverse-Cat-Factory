@@ -109,7 +109,8 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             if (targetGrid.Place(cell.x, cell.y, typeId))
             {
                 Vector3 spawnPos = targetGrid.CellToWorld(cell);
-                Instantiate(buildingPrefab, spawnPos, Quaternion.identity);
+                GameObject instance = Instantiate(buildingPrefab, spawnPos, Quaternion.identity, targetGrid.transform);
+                targetGrid.RegisterPlacedObject(cell, buildingPrefab, instance);
                 Debug.Log($"Placed building {typeId} at [{cell.x}, {cell.y}]");
             }
             else

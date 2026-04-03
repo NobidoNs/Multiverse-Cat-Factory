@@ -14,6 +14,8 @@ public class GridField : MonoBehaviour
 
     private bool[] occupied;
     private int[] cellType;
+    private GameObject[] placedPrefabs;
+    private GameObject[] placedInstances;
     private Transform groundPlane;
 
     private void Awake()
@@ -35,9 +37,13 @@ public class GridField : MonoBehaviour
         int total = width * height;
         occupied = new bool[total];
         cellType = new int[total];
+        placedPrefabs = new GameObject[total];
+        placedInstances = new GameObject[total];
 
         Array.Clear(occupied, 0, occupied.Length);
         Array.Clear(cellType, 0, cellType.Length);
+        Array.Clear(placedPrefabs, 0, placedPrefabs.Length);
+        Array.Clear(placedInstances, 0, placedInstances.Length);
 
         SyncGroundPlane();
     }
@@ -103,11 +109,63 @@ public class GridField : MonoBehaviour
         int idx = y * width + x;
         occupied[idx] = false;
         cellType[idx] = 0;
+        placedPrefabs[idx] = null;
+        placedInstances[idx] = null;
+    }
+
+    public void RegisterPlacedObject(Vector2Int cell, GameObject prefab, GameObject instance)
+    {
+        EnsureGrid();
+
+        if (cell.x < 0 || cell.y < 0 || cell.x >= width || cell.y >= height)
+        {
+            return;
+        }
+
+        int idx = cell.y * width + cell.x;
+        placedPrefabs[idx] = prefab;
+        placedInstances[idx] = instance;
+
+        if (instance != null)
+        {
+            instance.transform.SetParent(transform, true);
+        }
+    }
+
+    public void CopyPlacedObjectsTo(GridField targetGrid)
+    {
+        EnsureGrid();
+
+        if (targetGrid == null)
+        {
+            return;
+        }
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int idx = y * width + x;
+                if (!occupied[idx] || placedPrefabs[idx] == null)
+                {
+                    continue;
+                }
+
+                if (!targetGrid.Place(x, y, cellType[idx]))
+                {
+                    continue;
+                }
+
+                Vector3 spawnPosition = targetGrid.CellToWorld(new Vector2Int(x, y));
+                GameObject instance = Instantiate(placedPrefabs[idx], spawnPosition, Quaternion.identity, targetGrid.transform);
+                targetGrid.RegisterPlacedObject(new Vector2Int(x, y), placedPrefabs[idx], instance);
+            }
+        }
     }
 
     private void EnsureGrid()
     {
-        if (occupied == null || cellType == null)
+        if (occupied == null || cellType == null || placedPrefabs == null || placedInstances == null)
         {
             RebuildGrid();
         }
