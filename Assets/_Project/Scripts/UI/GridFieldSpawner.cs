@@ -50,7 +50,8 @@ public class GridFieldSpawner : MonoBehaviour
         GridField rightGrid = SpawnGrid(growthGrid, Vector3.right);
         if (rightGrid != null && Random.value < ExtraGridChance)
         {
-            SpawnGrid(growthGrid, Vector3.forward);
+            Vector3 branchDirection = Random.value < 0.5f ? Vector3.forward : Vector3.back;
+            SpawnGrid(growthGrid, branchDirection);
         }
 
         if (rightGrid != null)
@@ -106,6 +107,20 @@ public class GridFieldSpawner : MonoBehaviour
         {
             float templateRightEdge = templateGrid.transform.position.x + templateGrid.width * templateGrid.cellSize * 0.5f;
             targetPosition.x = templateRightEdge + horizontalSpacing + cloneHalfWidth;
+            return targetPosition;
+        }
+
+        if (direction == Vector3.left)
+        {
+            float templateLeftEdge = templateGrid.transform.position.x - templateGrid.width * templateGrid.cellSize * 0.5f;
+            targetPosition.x = templateLeftEdge - horizontalSpacing - cloneHalfWidth;
+            return targetPosition;
+        }
+
+        if (direction == Vector3.back)
+        {
+            float templateBottomEdge = templateGrid.transform.position.z - templateGrid.height * templateGrid.cellSize * 0.5f;
+            targetPosition.z = templateBottomEdge - verticalSpacing - cloneHalfHeight;
             return targetPosition;
         }
 
