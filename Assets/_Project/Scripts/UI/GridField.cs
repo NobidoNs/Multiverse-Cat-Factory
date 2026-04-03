@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class GridField : MonoBehaviour
 {
+    private const string GroundPlaneName = "GridGroundPlane";
+
     [Header("Grid")]
     public int width = 10;
     public int height = 10;
@@ -12,16 +14,23 @@ public class GridField : MonoBehaviour
 
     private bool[] occupied;
     private int[] cellType;
+    private Transform groundPlane;
 
     private void Awake()
     {
         RebuildGrid();
     }
 
+    private void OnValidate()
+    {
+        SyncGroundPlane();
+    }
+
     public void RebuildGrid()
     {
         width = Mathf.Max(1, width);
         height = Mathf.Max(1, height);
+        cellSize = Mathf.Max(0.01f, cellSize);
 
         int total = width * height;
         occupied = new bool[total];
@@ -29,6 +38,8 @@ public class GridField : MonoBehaviour
 
         Array.Clear(occupied, 0, occupied.Length);
         Array.Clear(cellType, 0, cellType.Length);
+
+        SyncGroundPlane();
     }
 
     public bool IsValidCell(Vector2Int cell)
@@ -99,6 +110,51 @@ public class GridField : MonoBehaviour
         if (occupied == null || cellType == null)
         {
             RebuildGrid();
+        }
+    }
+
+    private void SyncGroundPlane()
+    {
+        Transform planeTransform = GetOrCreateGroundPlane();
+        planeTransform.SetPositionAndRotation(Origin, Quaternion.identity);
+        planeTransform.localScale = new Vector3(
+            width * cellSize / 10f,
+            1f,
+            height * cellSize / 10f
+        );
+    }
+
+    private Transform GetOrCreateGroundPlane()
+    {
+        if (groundPlane != null)
+        {
+            return groundPlane;
+        }
+
+        Transform existingPlane = transform.Find(GroundPlaneName);
+        if (existingPlane != null)
+        {
+            groundPlane = existingPlane;
+            EnsureGroundPlanePhysics(existingPlane.gameObject);
+            return groundPlane;
+        }
+
+        GameObject planeObject = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        planeObject.name = GroundPlaneName;
+        planeObject.transform.SetParent(transform, true);
+
+        EnsureGroundPlanePhysics(planeObject);
+
+        groundPlane = planeObject.transform;
+        return groundPlane;
+    }
+
+    private static void EnsureGroundPlanePhysics(GameObject planeObject)
+    {
+        Collider collider = planeObject.GetComponent<Collider>();
+        if (collider == null)
+        {
+            planeObject.AddComponent<MeshCollider>();
         }
     }
 }
