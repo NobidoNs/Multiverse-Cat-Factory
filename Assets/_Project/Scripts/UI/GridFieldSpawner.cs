@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 public class GridFieldSpawner : MonoBehaviour
 {
-    private const float ExtraGridChance = 0.1f;
+    private const float ExtraGridChance = 0.5f;
     private const string GroundPlaneName = "GridGroundPlane";
 
     [SerializeField] private GridField sourceGrid;
@@ -65,7 +65,7 @@ public class GridFieldSpawner : MonoBehaviour
         if (templateGrid == null)
         {
             return null;
-        }
+        } 
 
         Transform parent = spawnedGridParent != null ? spawnedGridParent : templateGrid.transform.parent;
         GameObject clonedGridObject = Instantiate(templateGrid.gameObject, parent);
