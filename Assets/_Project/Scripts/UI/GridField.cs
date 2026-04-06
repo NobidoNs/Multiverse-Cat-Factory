@@ -4,6 +4,8 @@ using UnityEngine;
 public class GridField : MonoBehaviour
 {
     private const string GroundPlaneName = "GridGroundPlane";
+    private static readonly Color DefaultGridColor = Color.white;
+    private static readonly Color SelectedGridColor = new Color(0.55f, 0.9f, 0.65f, 1f);
 
     [Header("Grid")]
     public int width = 10;
@@ -14,7 +16,10 @@ public class GridField : MonoBehaviour
 
     private bool[] occupied;
     private int[] cellType;
+    private GameObject[] placedPrefabs;
+    private GameObject[] placedInstances;
     private Transform groundPlane;
+    private Renderer groundPlaneRenderer;
 
     private void Awake()
     {
@@ -35,9 +40,13 @@ public class GridField : MonoBehaviour
         int total = width * height;
         occupied = new bool[total];
         cellType = new int[total];
+        placedPrefabs = new GameObject[total];
+        placedInstances = new GameObject[total];
 
         Array.Clear(occupied, 0, occupied.Length);
         Array.Clear(cellType, 0, cellType.Length);
+        Array.Clear(placedPrefabs, 0, placedPrefabs.Length);
+        Array.Clear(placedInstances, 0, placedInstances.Length);
 
         SyncGroundPlane();
     }
@@ -103,11 +112,74 @@ public class GridField : MonoBehaviour
         int idx = y * width + x;
         occupied[idx] = false;
         cellType[idx] = 0;
+        placedPrefabs[idx] = null;
+        placedInstances[idx] = null;
+    }
+
+    public void RegisterPlacedObject(Vector2Int cell, GameObject prefab, GameObject instance)
+    {
+        EnsureGrid();
+
+        if (cell.x < 0 || cell.y < 0 || cell.x >= width || cell.y >= height)
+        {
+            return;
+        }
+
+        int idx = cell.y * width + cell.x;
+        placedPrefabs[idx] = prefab;
+        placedInstances[idx] = instance;
+
+        if (instance != null)
+        {
+            instance.transform.SetParent(transform, true);
+        }
+    }
+
+    public void CopyPlacedObjectsTo(GridField targetGrid)
+    {
+        EnsureGrid();
+
+        if (targetGrid == null)
+        {
+            return;
+        }
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int idx = y * width + x;
+                if (!occupied[idx] || placedPrefabs[idx] == null)
+                {
+                    continue;
+                }
+
+                if (!targetGrid.Place(x, y, cellType[idx]))
+                {
+                    continue;
+                }
+
+                Vector3 spawnPosition = targetGrid.CellToWorld(new Vector2Int(x, y));
+                GameObject instance = Instantiate(placedPrefabs[idx], spawnPosition, Quaternion.identity, targetGrid.transform);
+                targetGrid.RegisterPlacedObject(new Vector2Int(x, y), placedPrefabs[idx], instance);
+            }
+        }
+    }
+
+    public void SetSelectionVisual(bool isSelected)
+    {
+        Renderer renderer = GetGroundPlaneRenderer();
+        if (renderer == null)
+        {
+            return;
+        }
+
+        renderer.material.color = isSelected ? SelectedGridColor : DefaultGridColor;
     }
 
     private void EnsureGrid()
     {
-        if (occupied == null || cellType == null)
+        if (occupied == null || cellType == null || placedPrefabs == null || placedInstances == null)
         {
             RebuildGrid();
         }
@@ -122,6 +194,7 @@ public class GridField : MonoBehaviour
             1f,
             height * cellSize / 10f
         );
+        GetGroundPlaneRenderer();
     }
 
     private Transform GetOrCreateGroundPlane()
@@ -136,6 +209,7 @@ public class GridField : MonoBehaviour
         {
             groundPlane = existingPlane;
             EnsureGroundPlanePhysics(existingPlane.gameObject);
+            CacheGroundPlaneRenderer(existingPlane.gameObject);
             return groundPlane;
         }
 
@@ -144,9 +218,31 @@ public class GridField : MonoBehaviour
         planeObject.transform.SetParent(transform, true);
 
         EnsureGroundPlanePhysics(planeObject);
+        CacheGroundPlaneRenderer(planeObject);
 
         groundPlane = planeObject.transform;
         return groundPlane;
+    }
+
+    private Renderer GetGroundPlaneRenderer()
+    {
+        if (groundPlaneRenderer != null)
+        {
+            return groundPlaneRenderer;
+        }
+
+        if (groundPlane == null)
+        {
+            return null;
+        }
+
+        CacheGroundPlaneRenderer(groundPlane.gameObject);
+        return groundPlaneRenderer;
+    }
+
+    private void CacheGroundPlaneRenderer(GameObject planeObject)
+    {
+        groundPlaneRenderer = planeObject.GetComponent<Renderer>();
     }
 
     private static void EnsureGroundPlanePhysics(GameObject planeObject)
