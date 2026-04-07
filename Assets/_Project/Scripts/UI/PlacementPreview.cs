@@ -24,6 +24,11 @@ public class PlacementPreview : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    public void SetGrid(GridField gridRef)
+    {
+        grid = gridRef;
+    }
+
     public void UpdatePosition(Vector3 worldPos)
     {
         if (!isActive || grid == null)
