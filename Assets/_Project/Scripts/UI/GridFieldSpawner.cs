@@ -16,11 +16,57 @@ public class GridFieldSpawner : MonoBehaviour
     private readonly List<GridField> spawnedGrids = new List<GridField>();
     private Camera selectionCamera;
     private GridField activeGrid;
-
+    private readonly HashSet<int> occupiedRows = new HashSet<int>();
     private void Awake()
     {
         ResolveReferences();
         SetActiveGrid(sourceGrid);
+
+        if (sourceGrid != null)
+        {
+            int row = GetRowIndex(sourceGrid.transform.position.z);
+            occupiedRows.Add(row);
+        }
+    }
+
+    // Преобразуем координату в индекс строки (округляем до целого)
+    private int GetRowIndex(float zPosition)
+    {
+        return Mathf.RoundToInt(zPosition / (sourceGrid.cellSize * sourceGrid.height + verticalSpacing));
+    }
+
+    // Проверка: занята ли строка по оси X?
+    private bool IsRowOccupied(float zPosition)
+    {
+        int row = GetRowIndex(zPosition);
+        return occupiedRows.Contains(row);
+    }
+
+    private float GetRowStep()
+    {
+        return sourceGrid.cellSize * sourceGrid.height + verticalSpacing;
+    }
+
+    private float GetNextFreeRowZ(float startZ, Vector3 direction)
+    {
+        float rowStep = GetRowStep();
+        float candidateZ = startZ;
+        float zDirection = direction == Vector3.forward ? 1f : -1f;
+
+        while (IsRowOccupied(candidateZ))
+        {
+            candidateZ += rowStep * zDirection;
+        }
+
+        return candidateZ;
+    }
+
+    // Добавить строку в список занятых
+    private void MarkRowAsOccupied(float zPosition)
+    {
+        int row = GetRowIndex(zPosition);
+        occupiedRows.Add(row);
+        Debug.Log($"Row {row} marked as occupied. Total occupied rows: {occupiedRows.Count}");
     }
 
     private void Update()
@@ -48,6 +94,7 @@ public class GridFieldSpawner : MonoBehaviour
         spawnedGrids.RemoveAll(grid => grid == null);
         GridField growthGrid = GetGrowthGrid();
         GridField rightGrid = SpawnGrid(growthGrid, Vector3.right);
+
         if (rightGrid != null && Random.value < ExtraGridChance)
         {
             Vector3 branchDirection = Random.value < 0.5f ? Vector3.forward : Vector3.back;
@@ -94,6 +141,7 @@ public class GridFieldSpawner : MonoBehaviour
         clonedGrid.SetSelectionVisual(false);
 
         spawnedGrids.Add(clonedGrid);
+        MarkRowAsOccupied(targetPosition.z);
         return clonedGrid;
     }
 
@@ -120,12 +168,14 @@ public class GridFieldSpawner : MonoBehaviour
         if (direction == Vector3.back)
         {
             float templateBottomEdge = templateGrid.transform.position.z - templateGrid.height * templateGrid.cellSize * 0.5f;
-            targetPosition.z = templateBottomEdge - verticalSpacing - cloneHalfHeight;
+            float startZ = templateBottomEdge - verticalSpacing - cloneHalfHeight;
+            targetPosition.z = GetNextFreeRowZ(startZ, direction);
             return targetPosition;
         }
 
         float templateTopEdge = templateGrid.transform.position.z + templateGrid.height * templateGrid.cellSize * 0.5f;
-        targetPosition.z = templateTopEdge + verticalSpacing + cloneHalfHeight;
+        float forwardStartZ = templateTopEdge + verticalSpacing + cloneHalfHeight;
+        targetPosition.z = GetNextFreeRowZ(forwardStartZ, direction);
         return targetPosition;
     }
 
