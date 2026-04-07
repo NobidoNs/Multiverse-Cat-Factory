@@ -61,6 +61,24 @@ public class GridFieldSpawner : MonoBehaviour
         return candidateZ;
     }
 
+    private Vector3 GetBranchDirection(GridField grid)
+    {
+        int sourceRow = GetRowIndex(sourceGrid.transform.position.z);
+        int currentRow = GetRowIndex(grid.transform.position.z);
+
+        if (currentRow > sourceRow)
+        {
+            return Vector3.forward;
+        }
+
+        if (currentRow < sourceRow)
+        {
+            return Vector3.back;
+        }
+
+        return Random.value < 0.5f ? Vector3.forward : Vector3.back;
+    }
+
     // Добавить строку в список занятых
     private void MarkRowAsOccupied(float zPosition)
     {
@@ -97,7 +115,7 @@ public class GridFieldSpawner : MonoBehaviour
 
         if (rightGrid != null && Random.value < ExtraGridChance)
         {
-            Vector3 branchDirection = Random.value < 0.5f ? Vector3.forward : Vector3.back;
+            Vector3 branchDirection = GetBranchDirection(growthGrid);
             SpawnGrid(growthGrid, branchDirection);
         }
 
