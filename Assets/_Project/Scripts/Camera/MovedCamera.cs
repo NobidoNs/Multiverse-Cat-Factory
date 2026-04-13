@@ -59,7 +59,7 @@ public class IsoCameraController : MonoBehaviour
 
     void HandleZoom()
     {
-        if (DragDropItem.IsAnyItemDragging)
+        if (DragDropItem.IsAnyItemDragging || DraggableItem.IsAnyItemDragging)
         {
             return;
         }
@@ -82,6 +82,12 @@ public class IsoCameraController : MonoBehaviour
 
     void HandleDrag()
     {
+        if (DraggableItem.IsAnyItemDragging)
+        {
+            isDragging = false;
+            return;
+        }
+
         // Проверяем зажатый Shift
         if (!Input.GetKey(KeyCode.LeftShift))
         {
