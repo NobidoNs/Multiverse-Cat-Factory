@@ -59,6 +59,11 @@ public class IsoCameraController : MonoBehaviour
 
     void HandleZoom()
     {
+        if (DragDropItem.IsAnyItemDragging)
+        {
+            return;
+        }
+
         float scroll = Input.GetAxis("Mouse ScrollWheel");
 
         if (scroll != 0)

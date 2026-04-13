@@ -18,6 +18,7 @@ public class GridField : MonoBehaviour
     private int[] cellType;
     private GameObject[] placedPrefabs;
     private GameObject[] placedInstances;
+    private Quaternion[] placedRotations;
     private Transform groundPlane;
     private Renderer groundPlaneRenderer;
 
@@ -42,11 +43,16 @@ public class GridField : MonoBehaviour
         cellType = new int[total];
         placedPrefabs = new GameObject[total];
         placedInstances = new GameObject[total];
+        placedRotations = new Quaternion[total];
 
         Array.Clear(occupied, 0, occupied.Length);
         Array.Clear(cellType, 0, cellType.Length);
         Array.Clear(placedPrefabs, 0, placedPrefabs.Length);
         Array.Clear(placedInstances, 0, placedInstances.Length);
+        for (int i = 0; i < placedRotations.Length; i++)
+        {
+            placedRotations[i] = Quaternion.identity;
+        }
 
         SyncGroundPlane();
     }
@@ -114,9 +120,16 @@ public class GridField : MonoBehaviour
         cellType[idx] = 0;
         placedPrefabs[idx] = null;
         placedInstances[idx] = null;
+        placedRotations[idx] = Quaternion.identity;
     }
 
     public void RegisterPlacedObject(Vector2Int cell, GameObject prefab, GameObject instance)
+    {
+        Quaternion rotation = instance != null ? instance.transform.rotation : Quaternion.identity;
+        RegisterPlacedObject(cell, prefab, instance, rotation);
+    }
+
+    public void RegisterPlacedObject(Vector2Int cell, GameObject prefab, GameObject instance, Quaternion rotation)
     {
         EnsureGrid();
 
@@ -128,6 +141,7 @@ public class GridField : MonoBehaviour
         int idx = cell.y * width + cell.x;
         placedPrefabs[idx] = prefab;
         placedInstances[idx] = instance;
+        placedRotations[idx] = rotation;
 
         if (instance != null)
         {
@@ -160,8 +174,9 @@ public class GridField : MonoBehaviour
                 }
 
                 Vector3 spawnPosition = targetGrid.CellToWorld(new Vector2Int(x, y));
-                GameObject instance = Instantiate(placedPrefabs[idx], spawnPosition, Quaternion.identity, targetGrid.transform);
-                targetGrid.RegisterPlacedObject(new Vector2Int(x, y), placedPrefabs[idx], instance);
+                Quaternion rotation = placedRotations[idx];
+                GameObject instance = Instantiate(placedPrefabs[idx], spawnPosition, rotation, targetGrid.transform);
+                targetGrid.RegisterPlacedObject(new Vector2Int(x, y), placedPrefabs[idx], instance, rotation);
             }
         }
     }
@@ -179,7 +194,7 @@ public class GridField : MonoBehaviour
 
     private void EnsureGrid()
     {
-        if (occupied == null || cellType == null || placedPrefabs == null || placedInstances == null)
+        if (occupied == null || cellType == null || placedPrefabs == null || placedInstances == null || placedRotations == null)
         {
             RebuildGrid();
         }

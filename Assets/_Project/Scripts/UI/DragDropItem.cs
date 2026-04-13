@@ -4,6 +4,9 @@ using UnityEngine.EventSystems;
 public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     private const string GroundPlaneName = "GridGroundPlane";
+    private const float RotationStep = 90f;
+
+    public static bool IsAnyItemDragging { get; private set; }
 
     [Header("Placement")]
     public int typeId = 1;
@@ -19,6 +22,12 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
     private PlacementPreview placementPreview;
     private GridField activeGrid;
     private bool isDragging;
+    private float currentRotationY;
+
+    private void Update()
+    {
+        HandleRotationInput();
+    }
 
     private void Awake()
     {
@@ -42,7 +51,9 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         }
 
         isDragging = true;
+        IsAnyItemDragging = true;
         activeGrid = grid;
+        currentRotationY = 0f;
 
         if (canvasGroup != null)
         {
@@ -52,7 +63,7 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
 
         if (previewPrefab != null)
         {
-            currentPreview = Instantiate(previewPrefab, Vector3.zero, Quaternion.identity);
+            currentPreview = Instantiate(previewPrefab, Vector3.zero, GetCurrentRotation());
             placementPreview = currentPreview.GetComponent<PlacementPreview>();
 
             if (placementPreview != null)
@@ -109,8 +120,9 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
             if (targetGrid.Place(cell.x, cell.y, typeId))
             {
                 Vector3 spawnPos = targetGrid.CellToWorld(cell);
-                GameObject instance = Instantiate(buildingPrefab, spawnPos, Quaternion.identity, targetGrid.transform);
-                targetGrid.RegisterPlacedObject(cell, buildingPrefab, instance);
+                Quaternion rotation = GetCurrentRotation();
+                GameObject instance = Instantiate(buildingPrefab, spawnPos, rotation, targetGrid.transform);
+                targetGrid.RegisterPlacedObject(cell, buildingPrefab, instance, rotation);
                 Debug.Log($"Placed building {typeId} at [{cell.x}, {cell.y}]");
             }
             else
@@ -173,5 +185,32 @@ public class DragDropItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEnd
         currentPreview = null;
         placementPreview = null;
         activeGrid = null;
+        IsAnyItemDragging = false;
+    }
+
+    private void HandleRotationInput()
+    {
+        if (!isDragging)
+        {
+            return;
+        }
+
+        float scroll = Input.mouseScrollDelta.y;
+        if (Mathf.Approximately(scroll, 0f))
+        {
+            return;
+        }
+
+        currentRotationY += Mathf.Sign(scroll) * RotationStep;
+
+        if (currentPreview != null)
+        {
+            currentPreview.transform.rotation = GetCurrentRotation();
+        }
+    }
+
+    private Quaternion GetCurrentRotation()
+    {
+        return Quaternion.Euler(0f, currentRotationY, 0f);
     }
 }
