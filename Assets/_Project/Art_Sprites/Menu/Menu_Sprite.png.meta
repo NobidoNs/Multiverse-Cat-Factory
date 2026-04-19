@@ -254,10 +254,10 @@ TextureImporter:
       name: Menu_Sprite_7
       rect:
         serializedVersion: 2
-        x: 1904
-        y: 791
-        width: 809
-        height: 836
+        x: 1917
+        y: 805
+        width: 776
+        height: 811
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
