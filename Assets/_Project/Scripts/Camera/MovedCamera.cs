@@ -59,7 +59,7 @@ public class IsoCameraController : MonoBehaviour
 
     void HandleZoom()
     {
-        if (DragDropItem.IsAnyItemDragging || DraggableItem.IsAnyItemDragging)
+        if (Building.IsAnyItemDragging || DraggableItem.IsAnyItemDragging)
         {
             return;
         }
