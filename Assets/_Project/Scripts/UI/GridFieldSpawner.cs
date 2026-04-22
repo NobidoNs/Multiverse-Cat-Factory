@@ -18,6 +18,12 @@ public class GridFieldSpawner : MonoBehaviour
     [SerializeField] private float connectionArrowWidth = 0.2f;
     [SerializeField] private float connectionArrowHeightOffset = 0.5f;
     [SerializeField] private Material connectionArrowMaterial;
+    [Header("Arrow Zoom")]
+    [SerializeField] private bool scaleArrowsWithCameraZoom = true;
+    [SerializeField] private float hideArrowDistance = 6f;
+    [SerializeField] private float fullSizeArrowDistance = 20f;
+    [SerializeField] private float minArrowScale = 0.35f;
+    [SerializeField] private float maxArrowScale = 1f;
 
     private readonly List<GridField> spawnedGrids = new List<GridField>();
     private readonly List<GridConnection> spawnedConnections = new List<GridConnection>();
@@ -126,6 +132,10 @@ public class GridFieldSpawner : MonoBehaviour
     {
         horizontalSpacing = Mathf.Max(0f, horizontalSpacing);
         verticalSpacing = Mathf.Max(0f, verticalSpacing);
+        hideArrowDistance = Mathf.Max(0f, hideArrowDistance);
+        fullSizeArrowDistance = Mathf.Max(hideArrowDistance + 0.01f, fullSizeArrowDistance);
+        minArrowScale = Mathf.Max(0.01f, minArrowScale);
+        maxArrowScale = Mathf.Max(minArrowScale, maxArrowScale);
         ResolveReferences();
     }
 
@@ -342,18 +352,27 @@ public class GridFieldSpawner : MonoBehaviour
         Vector3 direction = end - start;
         if (direction.sqrMagnitude <= Mathf.Epsilon)
         {
+            SetConnectionVisible(connection, false);
+            return;
+        }
+
+        float arrowScale = GetArrowScale(start, end, out bool isVisible);
+        SetConnectionVisible(connection, isVisible);
+        if (!isVisible)
+        {
             return;
         }
 
         Vector3 arrowDirection = direction.normalized;
         Quaternion leftRotation = Quaternion.LookRotation(arrowDirection) * Quaternion.Euler(0f, 180f + ArrowHeadAngle, 0f);
         Quaternion rightRotation = Quaternion.LookRotation(arrowDirection) * Quaternion.Euler(0f, 180f - ArrowHeadAngle, 0f);
-        Vector3 leftHeadEnd = end + leftRotation * Vector3.forward * ArrowHeadLength;
-        Vector3 rightHeadEnd = end + rightRotation * Vector3.forward * ArrowHeadLength;
+        float scaledArrowHeadLength = ArrowHeadLength * arrowScale;
+        Vector3 leftHeadEnd = end + leftRotation * Vector3.forward * scaledArrowHeadLength;
+        Vector3 rightHeadEnd = end + rightRotation * Vector3.forward * scaledArrowHeadLength;
 
-        ApplyLineStyle(connection.MainLine);
-        ApplyLineStyle(connection.LeftHead);
-        ApplyLineStyle(connection.RightHead);
+        ApplyLineStyle(connection.MainLine, arrowScale);
+        ApplyLineStyle(connection.LeftHead, arrowScale);
+        ApplyLineStyle(connection.RightHead, arrowScale);
 
         connection.MainLine.SetPosition(0, start);
         connection.MainLine.SetPosition(1, end);
@@ -363,7 +382,7 @@ public class GridFieldSpawner : MonoBehaviour
         connection.RightHead.SetPosition(1, rightHeadEnd);
     }
 
-    private void ApplyLineStyle(LineRenderer lineRenderer)
+    private void ApplyLineStyle(LineRenderer lineRenderer, float arrowScale)
     {
         if (lineRenderer == null)
         {
@@ -373,8 +392,54 @@ public class GridFieldSpawner : MonoBehaviour
         lineRenderer.material = GetArrowMaterial();
         lineRenderer.startColor = connectionArrowColor;
         lineRenderer.endColor = connectionArrowColor;
-        lineRenderer.startWidth = connectionArrowWidth;
-        lineRenderer.endWidth = connectionArrowWidth;
+        float scaledArrowWidth = connectionArrowWidth * arrowScale;
+        lineRenderer.startWidth = scaledArrowWidth;
+        lineRenderer.endWidth = scaledArrowWidth;
+    }
+
+    private float GetArrowScale(Vector3 start, Vector3 end, out bool isVisible)
+    {
+        isVisible = true;
+
+        if (!scaleArrowsWithCameraZoom)
+        {
+            return 1f;
+        }
+
+        Camera cam = GetSelectionCamera();
+        if (cam == null)
+        {
+            return 1f;
+        }
+
+        Vector3 midpoint = Vector3.Lerp(start, end, 0.5f);
+        float zoomDistance = cam.orthographic
+            ? cam.orthographicSize
+            : Vector3.Distance(cam.transform.position, midpoint);
+
+        if (zoomDistance <= hideArrowDistance)
+        {
+            isVisible = false;
+            return 0f;
+        }
+
+        float normalizedDistance = Mathf.InverseLerp(hideArrowDistance, fullSizeArrowDistance, zoomDistance);
+        return Mathf.Lerp(minArrowScale, maxArrowScale, normalizedDistance);
+    }
+
+    private void SetConnectionVisible(GridConnection connection, bool isVisible)
+    {
+        SetLineVisible(connection.MainLine, isVisible);
+        SetLineVisible(connection.LeftHead, isVisible);
+        SetLineVisible(connection.RightHead, isVisible);
+    }
+
+    private void SetLineVisible(LineRenderer lineRenderer, bool isVisible)
+    {
+        if (lineRenderer != null)
+        {
+            lineRenderer.enabled = isVisible;
+        }
     }
 
     private void HandleGridSelection()
