@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     private const string GroundPlaneName = "GridGroundPlane";
+    private const float InitialRotationY = 90f;
     private const float RotationStep = 90f;
 
     public static bool IsAnyItemDragging { get; private set; }
@@ -52,7 +53,7 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         isDragging = true;
         IsAnyItemDragging = true;
         activeGrid = grid;
-        currentRotationY = 0f;
+        currentRotationY = InitialRotationY;
 
         currentPreview = CreatePreviewInstance(entry.GetPrefabForRotation(currentRotationY));
     }
