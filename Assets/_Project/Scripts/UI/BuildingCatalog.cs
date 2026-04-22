@@ -10,6 +10,24 @@ public class BuildingCatalog : MonoBehaviour
         [Min(1)]
         public int typeId = 1;
         public GameObject buildingPrefab;
+        public GameObject rotatedBuildingPrefab;
+
+        public GameObject GetPrefabForRotation(float rotationY)
+        {
+            if (rotatedBuildingPrefab == null)
+            {
+                return buildingPrefab;
+            }
+
+            int normalizedQuarterTurns = Mathf.RoundToInt(rotationY / 90f) % 4;
+            if (normalizedQuarterTurns < 0)
+            {
+                normalizedQuarterTurns += 4;
+            }
+
+            bool useRotatedPrefab = normalizedQuarterTurns == 1;
+            return useRotatedPrefab ? rotatedBuildingPrefab : buildingPrefab;
+        }
     }
 
     [SerializeField] private List<BuildingEntry> entries = new List<BuildingEntry>();

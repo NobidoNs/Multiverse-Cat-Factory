@@ -581,12 +581,16 @@ MonoBehaviour:
   entries:
   - typeId: 0
     buildingPrefab: {fileID: 1675805801061135852, guid: 15fce7a8f07742b46a73ba776125d41f, type: 3}
+    rotatedBuildingPrefab: {fileID: 0}
   - typeId: 1
     buildingPrefab: {fileID: 663361761361650521, guid: 9771599c83717374aaaabb95ccfee1e6, type: 3}
+    rotatedBuildingPrefab: {fileID: 0}
   - typeId: 2
-    buildingPrefab: {fileID: 1254669808716919077, guid: c6a974188d5ccf44ca1ff2d360232e09, type: 3}
+    buildingPrefab: {fileID: 436991516178556590, guid: 2972cab4fb6f6f8418d7be39ac20cc26, type: 3}
+    rotatedBuildingPrefab: {fileID: 1254669808716919077, guid: c6a974188d5ccf44ca1ff2d360232e09, type: 3}
   - typeId: 3
     buildingPrefab: {fileID: 3283159749840591591, guid: 37a334fa16b3ddf488ecbba0617555f4, type: 3}
+    rotatedBuildingPrefab: {fileID: 0}
 --- !u!1 &877632447
 GameObject:
   m_ObjectHideFlags: 0

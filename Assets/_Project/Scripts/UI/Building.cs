@@ -18,6 +18,7 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     public Color invalidPreviewColor = new Color(1f, 0.3f, 0.3f, 0.65f);
 
     private GameObject currentPreview;
+    private GameObject currentPreviewSourcePrefab;
     private GridField activeGrid;
     private bool isDragging;
     private float currentRotationY;
@@ -53,7 +54,7 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         activeGrid = grid;
         currentRotationY = 0f;
 
-        currentPreview = CreatePreviewInstance(entry.buildingPrefab);
+        currentPreview = CreatePreviewInstance(entry.GetPrefabForRotation(currentRotationY));
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -87,16 +88,24 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         if (TryGetPlacementTarget(eventData.position, out GridField targetGrid, out Vector3 worldPos))
         {
             Vector2Int cell = targetGrid.WorldToCell(worldPos);
-            if (!TryResolveBuildingEntry(out BuildingCatalog.BuildingEntry entry) || entry.buildingPrefab == null)
+            if (!TryResolveBuildingEntry(out BuildingCatalog.BuildingEntry entry))
             {
                 Debug.LogWarning($"Building: no building prefab found for typeId {typeId}.");
             }
             else if (targetGrid.Place(cell.x, cell.y, typeId))
             {
+                GameObject prefabToPlace = entry.GetPrefabForRotation(currentRotationY);
+                if (prefabToPlace == null)
+                {
+                    Debug.LogWarning($"Building: no building prefab found for typeId {typeId}.");
+                    CleanupDrag();
+                    return;
+                }
+
                 Vector3 spawnPos = targetGrid.CellToWorld(cell);
                 Quaternion rotation = GetCurrentRotation();
-                GameObject instance = Instantiate(entry.buildingPrefab, spawnPos, rotation, targetGrid.transform);
-                targetGrid.RegisterPlacedObject(cell, entry.buildingPrefab, instance, rotation);
+                GameObject instance = Instantiate(prefabToPlace, spawnPos, rotation, targetGrid.transform);
+                targetGrid.RegisterPlacedObject(cell, prefabToPlace, instance, rotation);
                 Debug.Log($"Placed building {typeId} at [{cell.x}, {cell.y}]");
             }
             else
@@ -153,6 +162,7 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
         }
 
         currentPreview = null;
+        currentPreviewSourcePrefab = null;
         previewRenderers = System.Array.Empty<Renderer>();
         activeGrid = null;
         IsAnyItemDragging = false;
@@ -173,10 +183,7 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 
         currentRotationY += Mathf.Sign(scroll) * RotationStep;
 
-        if (currentPreview != null)
-        {
-            currentPreview.transform.rotation = GetCurrentRotation();
-        }
+        RefreshPreviewPrefab();
     }
 
     private Quaternion GetCurrentRotation()
@@ -215,8 +222,14 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
     }
     private GameObject CreatePreviewInstance(GameObject sourcePrefab)
     {
+        if (sourcePrefab == null)
+        {
+            return null;
+        }
+
         GameObject preview = Instantiate(sourcePrefab, Vector3.zero, GetCurrentRotation());
         preview.name = $"{sourcePrefab.name}_Preview";
+        currentPreviewSourcePrefab = sourcePrefab;
         previewRenderers = preview.GetComponentsInChildren<Renderer>(true);
 
         SetPreviewPhysics(preview);
@@ -291,6 +304,41 @@ public class Building : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
                     material.SetColor("_Color", color);
                 }
             }
+        }
+    }
+
+    private void RefreshPreviewPrefab()
+    {
+        if (!TryResolveBuildingEntry(out BuildingCatalog.BuildingEntry entry))
+        {
+            return;
+        }
+
+        GameObject targetPreviewPrefab = entry.GetPrefabForRotation(currentRotationY);
+        if (targetPreviewPrefab == null)
+        {
+            return;
+        }
+
+        if (currentPreview == null || currentPreviewSourcePrefab != targetPreviewPrefab)
+        {
+            Vector3 previewPosition = currentPreview != null ? currentPreview.transform.position : Vector3.zero;
+
+            if (currentPreview != null)
+            {
+                Destroy(currentPreview);
+            }
+
+            currentPreview = CreatePreviewInstance(targetPreviewPrefab);
+            if (currentPreview != null)
+            {
+                currentPreview.transform.position = previewPosition;
+            }
+        }
+
+        if (currentPreview != null)
+        {
+            currentPreview.transform.rotation = GetCurrentRotation();
         }
     }
 }
