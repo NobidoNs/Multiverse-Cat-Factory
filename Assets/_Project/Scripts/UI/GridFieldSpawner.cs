@@ -16,7 +16,7 @@ public class GridFieldSpawner : MonoBehaviour
     [SerializeField] private string spawnedGridNamePrefix = "GridField";
     [SerializeField] private Color connectionArrowColor = Color.yellow;
     [SerializeField] private float connectionArrowWidth = 0.2f;
-    [SerializeField] private float connectionArrowHeightOffset = 0.5f;
+    [SerializeField] private float connectionArrowHeightOffset = -0.5f;
     [SerializeField] private Material connectionArrowMaterial;
     [Header("Arrow Zoom")]
     [SerializeField] private bool scaleArrowsWithCameraZoom = true;
@@ -30,11 +30,13 @@ public class GridFieldSpawner : MonoBehaviour
     private Camera selectionCamera;
     private GridField activeGrid;
     private readonly HashSet<int> occupiedRows = new HashSet<int>();
+    private readonly Dictionary<GridField, ArrowVisual> previewRightArrows = new Dictionary<GridField, ArrowVisual>();
+    private readonly Dictionary<GridField, Color> gridBranchColors = new Dictionary<GridField, Color>();
     private Material runtimeArrowMaterial;
 
     private class GridConnection
     {
-        public GridConnection(GridField parent, GridField child, GameObject visualRoot, LineRenderer mainLine, LineRenderer leftHead, LineRenderer rightHead)
+        public GridConnection(GridField parent, GridField child, GameObject visualRoot, LineRenderer mainLine, LineRenderer leftHead, LineRenderer rightHead, Color color)
         {
             Parent = parent;
             Child = child;
@@ -42,10 +44,28 @@ public class GridFieldSpawner : MonoBehaviour
             MainLine = mainLine;
             LeftHead = leftHead;
             RightHead = rightHead;
+            Color = color;
         }
 
         public GridField Parent { get; }
         public GridField Child { get; }
+        public GameObject VisualRoot { get; }
+        public LineRenderer MainLine { get; }
+        public LineRenderer LeftHead { get; }
+        public LineRenderer RightHead { get; }
+        public Color Color { get; }
+    }
+
+    private class ArrowVisual
+    {
+        public ArrowVisual(GameObject visualRoot, LineRenderer mainLine, LineRenderer leftHead, LineRenderer rightHead)
+        {
+            VisualRoot = visualRoot;
+            MainLine = mainLine;
+            LeftHead = leftHead;
+            RightHead = rightHead;
+        }
+
         public GameObject VisualRoot { get; }
         public LineRenderer MainLine { get; }
         public LineRenderer LeftHead { get; }
@@ -55,7 +75,9 @@ public class GridFieldSpawner : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        EnsureGridBranchColor(sourceGrid, connectionArrowColor);
         SetActiveGrid(sourceGrid);
+        UpdatePreviewRightArrows();
 
         if (sourceGrid != null)
         {
@@ -126,6 +148,7 @@ public class GridFieldSpawner : MonoBehaviour
     {
         HandleGridSelection();
         RefreshConnectionVisuals();
+        UpdatePreviewRightArrows();
     }
 
     private void OnValidate()
@@ -154,6 +177,16 @@ public class GridFieldSpawner : MonoBehaviour
         {
             Destroy(runtimeArrowMaterial);
         }
+
+        foreach (ArrowVisual previewArrow in previewRightArrows.Values)
+        {
+            if (previewArrow != null && previewArrow.VisualRoot != null)
+            {
+                Destroy(previewArrow.VisualRoot);
+            }
+        }
+
+        previewRightArrows.Clear();
     }
 
     public void SpawnGridToRight()
@@ -214,6 +247,7 @@ public class GridFieldSpawner : MonoBehaviour
         clonedGrid.RebuildGrid();
         templateGrid.CopyPlacedObjectsTo(clonedGrid);
         clonedGrid.SetSelectionVisual(false);
+        EnsureGridBranchColor(clonedGrid, GetChildBranchColor(templateGrid, direction));
 
         spawnedGrids.Add(clonedGrid);
         spawnedConnections.Add(CreateConnection(templateGrid, clonedGrid));
@@ -274,7 +308,7 @@ public class GridFieldSpawner : MonoBehaviour
         LineRenderer leftHead = CreateArrowLineRenderer("LeftHead", visualRoot.transform);
         LineRenderer rightHead = CreateArrowLineRenderer("RightHead", visualRoot.transform);
 
-        GridConnection connection = new GridConnection(parent, child, visualRoot, mainLine, leftHead, rightHead);
+        GridConnection connection = new GridConnection(parent, child, visualRoot, mainLine, leftHead, rightHead, GetGridBranchColor(child));
         UpdateConnectionVisual(connection);
         return connection;
     }
@@ -344,9 +378,121 @@ public class GridFieldSpawner : MonoBehaviour
         }
     }
 
+    private void RefreshPreviewArrowCache()
+    {
+        List<GridField> gridsWithMissingPreview = new List<GridField>();
+        foreach (GridField grid in previewRightArrows.Keys)
+        {
+            if (grid == null)
+            {
+                gridsWithMissingPreview.Add(grid);
+            }
+        }
+
+        for (int i = 0; i < gridsWithMissingPreview.Count; i++)
+        {
+            ArrowVisual previewArrow = previewRightArrows[gridsWithMissingPreview[i]];
+            if (previewArrow != null && previewArrow.VisualRoot != null)
+            {
+                Destroy(previewArrow.VisualRoot);
+            }
+
+            previewRightArrows.Remove(gridsWithMissingPreview[i]);
+        }
+
+        EnsurePreviewArrowForGrid(sourceGrid);
+
+        for (int i = spawnedGrids.Count - 1; i >= 0; i--)
+        {
+            GridField spawnedGrid = spawnedGrids[i];
+            if (spawnedGrid == null)
+            {
+                spawnedGrids.RemoveAt(i);
+                continue;
+            }
+
+            EnsurePreviewArrowForGrid(spawnedGrid);
+        }
+    }
+
+    private void EnsurePreviewArrowForGrid(GridField grid)
+    {
+        if (grid == null || previewRightArrows.ContainsKey(grid))
+        {
+            return;
+        }
+
+        GameObject visualRoot = new GameObject($"Arrow_Preview_Right_{grid.name}");
+        visualRoot.transform.SetParent(transform, false);
+        LineRenderer mainLine = CreateArrowLineRenderer("Main", visualRoot.transform);
+        LineRenderer leftHead = CreateArrowLineRenderer("LeftHead", visualRoot.transform);
+        LineRenderer rightHead = CreateArrowLineRenderer("RightHead", visualRoot.transform);
+        previewRightArrows.Add(grid, new ArrowVisual(visualRoot, mainLine, leftHead, rightHead));
+    }
+
+    private void UpdatePreviewRightArrows()
+    {
+        RefreshPreviewArrowCache();
+
+        foreach (KeyValuePair<GridField, ArrowVisual> previewEntry in previewRightArrows)
+        {
+            GridField grid = previewEntry.Key;
+            ArrowVisual arrowVisual = previewEntry.Value;
+
+            if (grid == null)
+            {
+                SetArrowVisible(arrowVisual, false);
+                continue;
+            }
+
+            Vector3 start = grid.transform.position + GetArrowHeightOffset();
+            Vector3 end = GetSpawnPosition(grid, grid, Vector3.right) + GetArrowHeightOffset();
+            Vector3 direction = end - start;
+
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                SetArrowVisible(arrowVisual, false);
+                continue;
+            }
+
+            float arrowScale = GetPreviewArrowScale(start, end);
+            Vector3 arrowDirection = direction.normalized;
+            Quaternion leftRotation = Quaternion.LookRotation(arrowDirection) * Quaternion.Euler(0f, 180f + ArrowHeadAngle, 0f);
+            Quaternion rightRotation = Quaternion.LookRotation(arrowDirection) * Quaternion.Euler(0f, 180f - ArrowHeadAngle, 0f);
+            float scaledArrowHeadLength = ArrowHeadLength * arrowScale;
+            Vector3 leftHeadEnd = end + leftRotation * Vector3.forward * scaledArrowHeadLength;
+            Vector3 rightHeadEnd = end + rightRotation * Vector3.forward * scaledArrowHeadLength;
+            Color arrowColor = GetGridBranchColor(grid);
+
+            ApplyLineStyle(arrowVisual.MainLine, arrowScale, arrowColor);
+            ApplyLineStyle(arrowVisual.LeftHead, arrowScale, arrowColor);
+            ApplyLineStyle(arrowVisual.RightHead, arrowScale, arrowColor);
+
+            arrowVisual.MainLine.SetPosition(0, start);
+            arrowVisual.MainLine.SetPosition(1, end);
+            arrowVisual.LeftHead.SetPosition(0, end);
+            arrowVisual.LeftHead.SetPosition(1, leftHeadEnd);
+            arrowVisual.RightHead.SetPosition(0, end);
+            arrowVisual.RightHead.SetPosition(1, rightHeadEnd);
+            SetArrowVisible(arrowVisual, true);
+        }
+    }
+
+    private void SetArrowVisible(ArrowVisual arrowVisual, bool isVisible)
+    {
+        if (arrowVisual == null)
+        {
+            return;
+        }
+
+        SetLineVisible(arrowVisual.MainLine, isVisible);
+        SetLineVisible(arrowVisual.LeftHead, isVisible);
+        SetLineVisible(arrowVisual.RightHead, isVisible);
+    }
+
     private void UpdateConnectionVisual(GridConnection connection)
     {
-        Vector3 heightOffset = Vector3.up * connectionArrowHeightOffset;
+        Vector3 heightOffset = GetArrowHeightOffset();
         Vector3 start = connection.Parent.transform.position + heightOffset;
         Vector3 end = connection.Child.transform.position + heightOffset;
         Vector3 direction = end - start;
@@ -370,9 +516,9 @@ public class GridFieldSpawner : MonoBehaviour
         Vector3 leftHeadEnd = end + leftRotation * Vector3.forward * scaledArrowHeadLength;
         Vector3 rightHeadEnd = end + rightRotation * Vector3.forward * scaledArrowHeadLength;
 
-        ApplyLineStyle(connection.MainLine, arrowScale);
-        ApplyLineStyle(connection.LeftHead, arrowScale);
-        ApplyLineStyle(connection.RightHead, arrowScale);
+        ApplyLineStyle(connection.MainLine, arrowScale, connection.Color);
+        ApplyLineStyle(connection.LeftHead, arrowScale, connection.Color);
+        ApplyLineStyle(connection.RightHead, arrowScale, connection.Color);
 
         connection.MainLine.SetPosition(0, start);
         connection.MainLine.SetPosition(1, end);
@@ -382,7 +528,7 @@ public class GridFieldSpawner : MonoBehaviour
         connection.RightHead.SetPosition(1, rightHeadEnd);
     }
 
-    private void ApplyLineStyle(LineRenderer lineRenderer, float arrowScale)
+    private void ApplyLineStyle(LineRenderer lineRenderer, float arrowScale, Color arrowColor)
     {
         if (lineRenderer == null)
         {
@@ -390,8 +536,8 @@ public class GridFieldSpawner : MonoBehaviour
         }
 
         lineRenderer.material = GetArrowMaterial();
-        lineRenderer.startColor = connectionArrowColor;
-        lineRenderer.endColor = connectionArrowColor;
+        lineRenderer.startColor = arrowColor;
+        lineRenderer.endColor = arrowColor;
         float scaledArrowWidth = connectionArrowWidth * arrowScale;
         lineRenderer.startWidth = scaledArrowWidth;
         lineRenderer.endWidth = scaledArrowWidth;
@@ -425,6 +571,82 @@ public class GridFieldSpawner : MonoBehaviour
 
         float normalizedDistance = Mathf.InverseLerp(hideArrowDistance, fullSizeArrowDistance, zoomDistance);
         return Mathf.Lerp(minArrowScale, maxArrowScale, normalizedDistance);
+    }
+
+    private float GetPreviewArrowScale(Vector3 start, Vector3 end)
+    {
+        if (!scaleArrowsWithCameraZoom)
+        {
+            return 1f;
+        }
+
+        Camera cam = GetSelectionCamera();
+        if (cam == null)
+        {
+            return 1f;
+        }
+
+        Vector3 midpoint = Vector3.Lerp(start, end, 0.5f);
+        float zoomDistance = cam.orthographic
+            ? cam.orthographicSize
+            : Vector3.Distance(cam.transform.position, midpoint);
+
+        float normalizedDistance = Mathf.InverseLerp(0f, fullSizeArrowDistance, zoomDistance);
+        return Mathf.Lerp(minArrowScale, maxArrowScale, normalizedDistance);
+    }
+
+    private Vector3 GetArrowHeightOffset()
+    {
+        return Vector3.up * -Mathf.Abs(connectionArrowHeightOffset);
+    }
+
+    private void EnsureGridBranchColor(GridField grid, Color color)
+    {
+        if (grid == null)
+        {
+            return;
+        }
+
+        gridBranchColors[grid] = color;
+    }
+
+    private Color GetGridBranchColor(GridField grid)
+    {
+        if (grid == null)
+        {
+            return connectionArrowColor;
+        }
+
+        if (gridBranchColors.TryGetValue(grid, out Color color))
+        {
+            return color;
+        }
+
+        gridBranchColors[grid] = connectionArrowColor;
+        return connectionArrowColor;
+    }
+
+    private Color GetChildBranchColor(GridField parentGrid, Vector3 direction)
+    {
+        if (direction == Vector3.right)
+        {
+            return GetGridBranchColor(parentGrid);
+        }
+
+        return GetRandomBranchColor();
+    }
+
+    private Color GetRandomBranchColor()
+    {
+        return Random.ColorHSV(
+            0f,
+            1f,
+            0.65f,
+            1f,
+            0.75f,
+            1f,
+            1f,
+            1f);
     }
 
     private void SetConnectionVisible(GridConnection connection, bool isVisible)

@@ -866,10 +866,10 @@ MonoBehaviour:
   spawnedGridNamePrefix: GridField
   connectionArrowColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   connectionArrowWidth: 0.2
-  connectionArrowHeightOffset: 0.5
+  connectionArrowHeightOffset: -0.5
   connectionArrowMaterial: {fileID: 0}
   scaleArrowsWithCameraZoom: 1
-  hideArrowDistance: 6
+  hideArrowDistance: 0
   fullSizeArrowDistance: 20
   minArrowScale: 0.35
   maxArrowScale: 1
@@ -965,7 +965,7 @@ Transform:
   m_GameObject: {fileID: 1529720115}
   serializedVersion: 2
   m_LocalRotation: {x: 0.574705, y: -0.071580514, z: -0.076759174, w: 0.8116024}
-  m_LocalPosition: {x: 0.23976, y: 3, z: -4.14293}
+  m_LocalPosition: {x: 0, y: 3, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
