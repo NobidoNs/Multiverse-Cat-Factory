@@ -1539,6 +1539,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6657292763273053535}
+  - component: {fileID: 3491089973014633074}
+  - component: {fileID: -6688191545076578590}
+  - component: {fileID: -4853117903615946800}
   m_Layer: 0
   m_Name: Press
   m_TagString: Untagged
@@ -1562,6 +1565,63 @@ Transform:
   - {fileID: 6158086701571477815}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3491089973014633074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3283159749840591591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5b7a10f2a89490ab3d27a8d9e6f41c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProcessingMachine
+  acceptedInputPrefab: {fileID: 756662216118515726, guid: 94e0560b4d8beba4683323779f9eea01, type: 3}
+  outputPrefab: {fileID: 756662216118515726, guid: 34d40cd8070b7f842a4d7ee7b5fd2da9, type: 3}
+  processingTime: 1.5
+  inputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  outputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  sideMargin: 0.05
+  holdHeight: 0.35
+  outputHeight: 0.35
+  outputForwardOffset: 0.1
+--- !u!114 &-6688191545076578590
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3283159749840591591}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b0f0bf3460a7224b8b66c8612b70d57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Conveyor
+  speed: 1
+  mt: {fileID: 0}
+  textureScrollSpeed: 1
+--- !u!65 &-4853117903615946800
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3283159749840591591}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 0.5, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &3587506464281574245
 GameObject:
   m_ObjectHideFlags: 0
@@ -3834,19 +3894,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071068
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.7071068
+      value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -3854,7 +3914,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: 90
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -4003,6 +4063,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3900640147966357057}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 987654321098765432}
     - targetCorrespondingSourceObject: {fileID: -2401461927832717007, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 3250416858989289381}
@@ -5177,6 +5240,27 @@ MonoBehaviour:
   angleThreshold: 35
   includeBoundaryEdges: 1
   childName: __FeatureEdges
+--- !u!114 &987654321098765432
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6790930807806086029}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5b7a10f2a89490ab3d27a8d9e6f41c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProcessingMachine
+  acceptedInputPrefab: {fileID: 756662216118515726, guid: 94e0560b4d8beba4683323779f9eea01, type: 3}
+  outputPrefab: {fileID: 756662216118515726, guid: 34d40cd8070b7f842a4d7ee7b5fd2da9, type: 3}
+  processingTime: 1.5
+  inputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  outputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  sideMargin: 0.05
+  holdHeight: 0.35
+  outputHeight: 0.35
+  outputForwardOffset: 0.1
 --- !u!4 &7104371177084974608 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3488206922441064652, guid: d84ace45cb9c8a047aadd7ae0f7d7c3b, type: 3}

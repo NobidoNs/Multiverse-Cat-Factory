@@ -9,6 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7145226761699602406}
+  - component: {fileID: -3181737010083456708}
+  - component: {fileID: 2154320983366952136}
   m_Layer: 0
   m_Name: Furnace
   m_TagString: Untagged
@@ -32,6 +34,42 @@ Transform:
   - {fileID: 4689057512779827088}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-3181737010083456708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 663361761361650521}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5b7a10f2a89490ab3d27a8d9e6f41c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProcessingMachine
+  acceptedInputPrefab: {fileID: 756662216118515726, guid: a43d9d78c34caa8469d307fddda986c9, type: 3}
+  outputPrefab: {fileID: 756662216118515726, guid: 94e0560b4d8beba4683323779f9eea01, type: 3}
+  processingTime: 1.5
+  inputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  outputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  sideMargin: 0.05
+  holdHeight: 0.35
+  outputHeight: 0.35
+  outputForwardOffset: 0.1
+--- !u!114 &2154320983366952136
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 663361761361650521}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b0f0bf3460a7224b8b66c8612b70d57, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Conveyor
+  speed: 1
+  mt: {fileID: 0}
+  textureScrollSpeed: 1
 --- !u!1 &5651861790813792094
 GameObject:
   m_ObjectHideFlags: 0
@@ -283,6 +321,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 048f034f90866e94b9e3a6c340eaee11, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7044911776778401454}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 048f034f90866e94b9e3a6c340eaee11, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 654321098765432109}
   m_SourcePrefab: {fileID: 100100000, guid: 048f034f90866e94b9e3a6c340eaee11, type: 3}
 --- !u!4 &4689057512779827088 stripped
 Transform:
@@ -340,3 +381,24 @@ MonoBehaviour:
   angleThreshold: 35
   includeBoundaryEdges: 1
   childName: __FeatureEdges
+--- !u!114 &654321098765432109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5357366396150750506}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5b7a10f2a89490ab3d27a8d9e6f41c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProcessingMachine
+  acceptedInputPrefab: {fileID: 756662216118515726, guid: a43d9d78c34caa8469d307fddda986c9, type: 3}
+  outputPrefab: {fileID: 756662216118515726, guid: 94e0560b4d8beba4683323779f9eea01, type: 3}
+  processingTime: 1.5
+  inputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  outputZoneSize: {x: 0.8, y: 0.8, z: 0.35}
+  sideMargin: 0.05
+  holdHeight: 0.35
+  outputHeight: 0.35
+  outputForwardOffset: 0.1
