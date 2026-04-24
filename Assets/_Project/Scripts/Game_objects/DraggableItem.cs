@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -13,12 +14,24 @@ public class DraggableItem : MonoBehaviour
     [SerializeField] private float surfaceOffset = 0.05f;
     [SerializeField] private bool disableGravityWhileDragging = true;
     [SerializeField] private bool freezeRotationWhileDragging = true;
+    [SerializeField] private float destroyBelowY = 0f;
+    [SerializeField] private float destroyAnimationDuration = 0.2f;
+    [SerializeField] private float destroyRiseDistance = 0.15f;
+    [SerializeField] private float stuckDetectionDelay = 0.75f;
+    [SerializeField] private float stuckVelocityThreshold = 0.02f;
+    [SerializeField] private float stuckPositionThreshold = 0.02f;
+    [SerializeField] private float stuckPenetrationThreshold = 0.01f;
 
     private Rigidbody rb;
     private Collider cachedCollider;
+    private Collider[] itemColliders = Array.Empty<Collider>();
+    private readonly Collider[] overlapResults = new Collider[32];
     private bool isDragging;
+    private bool isDespawning;
     private float fallbackPlaneHeight;
+    private float stuckTimer;
     private Vector3 dragOffset;
+    private Vector3 lastPosition;
     private bool originalUseGravity;
     private bool originalIsKinematic;
     private RigidbodyConstraints originalConstraints;
@@ -27,6 +40,8 @@ public class DraggableItem : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         cachedCollider = GetComponent<Collider>();
+        itemColliders = GetComponentsInChildren<Collider>(includeInactive: false);
+        lastPosition = transform.position;
 
         if (targetCamera == null)
         {
@@ -36,6 +51,17 @@ public class DraggableItem : MonoBehaviour
 
     private void Update()
     {
+        if (isDespawning)
+        {
+            return;
+        }
+
+        if (transform.position.y < destroyBelowY)
+        {
+            TryDespawnWithAnimation();
+            return;
+        }
+
         if (!isDragging)
         {
             return;
@@ -52,6 +78,11 @@ public class DraggableItem : MonoBehaviour
 
     private void OnMouseDown()
     {
+        if (isDespawning)
+        {
+            return;
+        }
+
         if (Input.GetKey(KeyCode.LeftShift))
         {
             return;
@@ -71,6 +102,22 @@ public class DraggableItem : MonoBehaviour
         {
             EndDrag();
         }
+    }
+
+    private void FixedUpdate()
+    {
+        if (isDespawning)
+        {
+            return;
+        }
+
+        if (transform.position.y < destroyBelowY)
+        {
+            TryDespawnWithAnimation();
+            return;
+        }
+
+        UpdateStuckState();
     }
 
     private void BeginDrag()
@@ -163,6 +210,17 @@ public class DraggableItem : MonoBehaviour
         IsAnyItemDragging = false;
     }
 
+    public bool TryDespawnWithAnimation()
+    {
+        if (isDespawning)
+        {
+            return false;
+        }
+
+        StartCoroutine(AnimateAndDestroy());
+        return true;
+    }
+
     private bool TryGetDragPoint(Ray ray, bool allowSelfHit, out Vector3 point)
     {
         RaycastHit[] hits = Physics.RaycastAll(ray, MaxRaycastDistance);
@@ -214,5 +272,139 @@ public class DraggableItem : MonoBehaviour
         }
 
         return targetCamera;
+    }
+
+    private void UpdateStuckState()
+    {
+        if (isDragging || (rb != null && rb.isKinematic))
+        {
+            stuckTimer = 0f;
+            lastPosition = transform.position;
+            return;
+        }
+
+        bool isEmbedded = IsEmbeddedInOtherCollider();
+        bool isNearlyStill = IsNearlyStill();
+
+        if (isEmbedded && isNearlyStill)
+        {
+            stuckTimer += Time.fixedDeltaTime;
+            if (stuckTimer >= stuckDetectionDelay)
+            {
+                TryDespawnWithAnimation();
+            }
+        }
+        else
+        {
+            stuckTimer = 0f;
+        }
+
+        lastPosition = transform.position;
+    }
+
+    private bool IsNearlyStill()
+    {
+        if (rb != null)
+        {
+            return rb.linearVelocity.sqrMagnitude <= stuckVelocityThreshold * stuckVelocityThreshold;
+        }
+
+        return (transform.position - lastPosition).sqrMagnitude <= stuckPositionThreshold * stuckPositionThreshold;
+    }
+
+    private bool IsEmbeddedInOtherCollider()
+    {
+        for (int i = 0; i < itemColliders.Length; i++)
+        {
+            Collider itemCollider = itemColliders[i];
+            if (itemCollider == null || !itemCollider.enabled || itemCollider.isTrigger)
+            {
+                continue;
+            }
+
+            Bounds bounds = itemCollider.bounds;
+            int hitCount = Physics.OverlapBoxNonAlloc(
+                bounds.center,
+                bounds.extents,
+                overlapResults,
+                itemCollider.transform.rotation,
+                ~0,
+                QueryTriggerInteraction.Ignore);
+
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+            {
+                Collider otherCollider = overlapResults[hitIndex];
+                if (otherCollider == null || otherCollider == itemCollider || otherCollider.transform.IsChildOf(transform))
+                {
+                    continue;
+                }
+
+                if (Physics.ComputePenetration(
+                        itemCollider,
+                        itemCollider.transform.position,
+                        itemCollider.transform.rotation,
+                        otherCollider,
+                        otherCollider.transform.position,
+                        otherCollider.transform.rotation,
+                        out _,
+                        out float distance) &&
+                    distance >= stuckPenetrationThreshold)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private IEnumerator AnimateAndDestroy()
+    {
+        isDespawning = true;
+        stuckTimer = 0f;
+
+        if (isDragging)
+        {
+            EndDrag();
+        }
+
+        for (int i = 0; i < itemColliders.Length; i++)
+        {
+            Collider itemCollider = itemColliders[i];
+            if (itemCollider != null)
+            {
+                itemCollider.enabled = false;
+            }
+        }
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.useGravity = false;
+            rb.isKinematic = true;
+        }
+
+        Vector3 startPosition = transform.position;
+        Vector3 startScale = transform.localScale;
+        Quaternion startRotation = transform.rotation;
+        Quaternion endRotation = startRotation * Quaternion.Euler(0f, 135f, 0f);
+        float duration = Mathf.Max(0.01f, destroyAnimationDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            float progress = elapsed / duration;
+            float easedProgress = 1f - Mathf.Pow(1f - progress, 3f);
+
+            transform.position = startPosition + Vector3.up * (destroyRiseDistance * easedProgress);
+            transform.rotation = Quaternion.Slerp(startRotation, endRotation, easedProgress);
+            transform.localScale = Vector3.LerpUnclamped(startScale, Vector3.zero, easedProgress);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        Destroy(gameObject);
     }
 }

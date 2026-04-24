@@ -125,7 +125,11 @@ public class ProcessingMachine : MonoBehaviour
     {
         if (currentInputItem != null)
         {
-            Destroy(currentInputItem);
+            DraggableItem draggableItem = currentInputItem.GetComponent<DraggableItem>();
+            if (draggableItem == null || !draggableItem.TryDespawnWithAnimation())
+            {
+                Destroy(currentInputItem);
+            }
         }
 
         currentInputItem = null;
